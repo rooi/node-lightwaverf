@@ -390,8 +390,9 @@ LightwaveRF.prototype.parseRooms = function(lightwaveResponse, callback) {
     //   M: Mood (active)
     //   o: All Off
     var deviceTypeMapping = {
-      1: 'O',
-      2: 'D'
+      1: 'L',
+      2: 'D',
+      3: 'P'
     }
 
     for (var j = 0; j < r.devices.length; j++) {
@@ -442,6 +443,7 @@ LightwaveRF.prototype.getConfiguration = function(email,pin,manager_host,callbac
       return auth.get(host + '/v1/device_type?nested=1');
     })
     .then(function (res) {
+      console.log(res);
       return auth.get(host + '/v1/user_profile?nested=1')
     })
     .then(function (res) {
