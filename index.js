@@ -6,7 +6,7 @@ var querystring = require('querystring');
 var fs = require('fs');
 var wait = require('wait.for');
 var yaml = require('js-yaml');
-var debug = require('debug');
+var debug = require('debug')('lightwaverf');
 var rp = require('request-promise');
 
 /**
@@ -18,7 +18,7 @@ var rp = require('request-promise');
  */
 function LightwaveRF(config,callback) {
     if (!(this instanceof LightwaveRF))  {
-        return new LightwaveRF(config);
+        return new LightwaveRF(config, callback);
     }
     this.timeout = config.timeout || 1000;
     this.queue = [];
@@ -299,12 +299,23 @@ LightwaveRF.prototype.sendUdp = function(message, callback){
 
 	//Add listener
 	if (callback) {
-		this.responseListeners[parseInt(code, 10).toString()] = {
+        const listenerKey = parseInt(code, 10).toString();
+		this.responseListeners[listenerKey] = {
 			time: new Date().getTime(),
 			listener: function(returnedCode, content) {
 				callback(undefined, content);
 			}
-		}
+        };
+        
+        // Expire request, trigger retry
+        setTimeout(() => {
+            const listener = this.responseListeners[listenerKey];
+            if (listener) {
+                debug("The listener is still there, triggering error");
+                delete this.responseListeners[listenerKey];
+                callback(listenerKey, "ERR:EXPIRED");
+            }
+        }, 1000);
 	}
 }
 
@@ -315,9 +326,9 @@ LightwaveRF.prototype.process = function() {
     this.ready = false;
     this.send.apply(this, this.queue.shift());
     setTimeout(function () {
-               self.ready = true;
-               self.process();
-               }, this.timeout);
+        self.ready = true;
+        self.process();
+        }, this.timeout);
 };
 
 
