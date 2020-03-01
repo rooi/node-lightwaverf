@@ -6,8 +6,8 @@ var querystring = require('querystring');
 var fs = require('fs');
 var wait = require('wait.for');
 var yaml = require('js-yaml');
-var debug = require('debug')('lightwaverf');
 var rp = require('request-promise');
+var debug = require('debug')('lightwaverf');
 
 /**
  * LightwaveRF API
@@ -20,6 +20,8 @@ function LightwaveRF(config,callback) {
     if (!(this instanceof LightwaveRF))  {
         return new LightwaveRF(config, callback);
     }
+
+    const self = this;
     this.timeout = config.timeout || 1000;
     this.queue = [];
     this.ready = true;
@@ -28,7 +30,9 @@ function LightwaveRF(config,callback) {
     //deviceId:0,deviceName:'',
     //deviceType:''}];
 
-	events.EventEmitter.call(this);
+    events.EventEmitter.call(this);
+    
+    this.setMaxListeners(255);
 
 	//Counter
 	this.messageCounter = 0;
@@ -66,7 +70,16 @@ function LightwaveRF(config,callback) {
 
 	//Receive message
 	this.receiveSocket.on("message", function (message, rinfo) {
+        debug("Received response msg:%s, rinfo:%s", message, rinfo);
 		//console.log(" -- Receiver socket got: " + message + " from " + rinfo.address + ":" + rinfo.port);
+
+        debug("Is it JSON response", message.toString(), message.toString().match(/^\*!/));
+        // If JSON response
+        if (message.toString().match(/^\*!/)) {
+            const jsonString = message.toString().replace(/^\*!/, "");
+            debug("Responding to JSON event with", jsonString);
+            self.emit("RESPONSE_RECEIVED", JSON.parse(jsonString));
+        }
 
 		//Check this came from the lightwave unit
 		if (rinfo.address !== this.config.ip) {
@@ -82,6 +95,7 @@ function LightwaveRF(config,callback) {
 		var code = parts.splice(0,1);
 		var content = parts.join(",").replace(/(\r\n|\n|\r)/gm,"");
 
+
 		//Check to see if we have a relevant listener
 		var responseListenerData = this.responseListeners[code.toString()];
 		if (responseListenerData) {
@@ -93,7 +107,7 @@ function LightwaveRF(config,callback) {
 	}.bind(this));
 	this.receiveSocket.on("listening", function () {
 		var address = this.receiveSocket.address();
-		console.log("Receiver socket listening " + address.address + ":" + address.port);
+		debug("Receiver socket listening " + address.address + ":" + address.port);
 	}.bind(this));
 
 	//Bind to the receive port
@@ -289,7 +303,7 @@ LightwaveRF.prototype.sendUdp = function(message, callback){
 	//Prepend code to message
 	message = code + "," + message;
 
-	console.log("Sending message: " + message);
+	debug("Sending message: " + message);
 
 	//Create buffer from message
 	var buffer = new Buffer(message);
@@ -303,6 +317,10 @@ LightwaveRF.prototype.sendUdp = function(message, callback){
 		this.responseListeners[listenerKey] = {
 			time: new Date().getTime(),
 			listener: function(returnedCode, content) {
+                if (content !== "OK") {
+                    return callback(content);
+                }
+
 				callback(undefined, content);
 			}
         };
