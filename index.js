@@ -516,7 +516,7 @@ LightwaveRF.prototype.getConfiguration = function(email,pin,manager_host,callbac
       return auth.get(host + '/v1/device_type?nested=1');
     })
     .then(function (res) {
-      console.log(res);
+      debug(res);
       return auth.get(host + '/v1/user_profile?nested=1')
     })
     .then(function (res) {
