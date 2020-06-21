@@ -18,8 +18,11 @@
   "bugs": {
     "url": "https://github.com/ollieparsley/node-lightwaverf/issues"
   },
-    "dependencies": {
-        "wait.for": ">=0.6.6",
-        "js-yaml": ">=3.5.3"
-    }
+  "dependencies": {
+    "debug": "~2.2.0",
+    "js-yaml": ">=3.5.3",
+    "request": "^2.74.0",
+    "request-promise": "^4.1.1",
+    "wait.for": ">=0.6.6"
+  }
 }
