@@ -128,8 +128,18 @@ function LightwaveRF(config, callback) {
     this.sendSocket.bind();
     //Bind to the receive port
     this.receiveSocket.bind(9761);
+
+    process.on('SIGINT', () => {
+        self.stop();
+    })
 }
 util.inherits(LightwaveRF, events.EventEmitter);
+
+LightwaveRF.prototype.stop = function () {
+    debug("Stopping server sockets")
+    this.sendSocket.close();
+    this.receiveSocket.close();
+}
 
 LightwaveRF.prototype.initialiseConfiguration = function (callback) {
     if (this.config.file) {
@@ -352,7 +362,7 @@ LightwaveRF.prototype.sendUdp = function (message, callback) {
             if (listener) {
                 debug("The listener is still there, triggering error");
                 delete this.responseListeners[transactionNumber];
-                callback(listenerKey, undefined, "ERR:EXPIRED");
+                callback("ERR:EXPIRED", undefined);
             }
         }, 1000);
     }
