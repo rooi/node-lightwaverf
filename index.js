@@ -103,9 +103,8 @@ function LightwaveRF(config, callback) {
         }
 
         responseListenerData.listener(
-            linkResponse.trans,
+            linkResponse.error ? linkResponse.error : null,
             linkResponse.fn,
-            linkResponse.error ? linkResponse.error : null
         );
 
         delete this.responseListeners[linkResponse.trans];
